@@ -1,0 +1,19 @@
+---
+// Appends the page's frontmatter sources and review date to every page.
+import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+const { sources = [], reviewed, status } = Astro.locals.starlightRoute.entry.data;
+---
+<Default><slot /></Default>
+{sources.length > 0 && (
+	<section class="sources">
+		<h2>Sources</h2>
+		<ol>
+			{sources.map((s) => (
+				<li><a href={s.url}>{s.title}</a>{s.note && <> - {s.note}</>}</li>
+			))}
+		</ol>
+		{status === 'reviewed' && reviewed && (
+			<p><small>Checked against these sources on {reviewed.toISOString().slice(0, 10)}.</small></p>
+		)}
+	</section>
+)}
