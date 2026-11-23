@@ -1,0 +1,42 @@
+---
+// Reference table of the estimator's typical devices, read from the same catalog the estimator
+// uses, so the page and the tool never disagree.
+import { DEVICES, GROUPS, SOURCES } from './estimator/catalog';
+
+const rows = DEVICES.filter((d) => d.id !== 'other');
+const fmt = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+---
+
+<table>
+	<thead>
+		<tr>
+			<th>Device</th>
+			<th>Watts</th>
+			<th>Hours a day</th>
+			<th>Wh a day</th>
+			<th>AC or DC</th>
+			<th>Source</th>
+		</tr>
+	</thead>
+	<tbody>
+		{rows.map((d) => (
+			<tr>
+				<td>{d.name}<br /><small>{GROUPS[d.group]}</small></td>
+				<td>{d.w}</td>
+				<td>{d.h}</td>
+				<td>{fmt(d.w * d.h)}</td>
+				<td>{d.ac ? 'AC (inverter)' : 'DC'}</td>
+				<td>
+					{d.src.length
+						? d.src.map((id, i) => (
+								<>
+									{i > 0 && '; '}
+									<a href={SOURCES[id].url}>{SOURCES[id].label}</a>
+								</>
+							))
+						: 'none found: an estimate'}
+				</td>
+			</tr>
+		))}
+	</tbody>
+</table>

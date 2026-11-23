@@ -1,0 +1,176 @@
+---
+title: System estimator
+description: List your devices and get a first estimate of the battery, panels, charge controller and inverter you need.
+status: draft
+sidebar:
+  order: 6
+sources:
+  - title: Global LEAP (2019), Buyer's Guide for Off-Grid Refrigerators
+    url: https://assets.publishing.service.gov.uk/media/5ddd5b7d40f0b650e4a64d0b/2019-Global-LEAP-Refrigerators-Buyers-Guide_final.pdf
+    note: DC fridge energy per day tested at 32 C; declared vs tested values; start current
+  - title: Global LEAP (2017), Buyer's Guide for Off-Grid Fans and Televisions
+    url: https://cdn.shopify.com/s/files/1/0686/0279/0141/files/global_leap_awards_buyers_guide_fans_and_televisions_2016_17_winner_superfan.pdf
+    note: tested power of DC fans and TVs
+  - title: Efficiency for Access (2021), Appliance Data Trends
+    url: https://www.clasp.ngo/wp-content/uploads/2021/01/2021-ApplianceDataTrends.pdf
+    note: hours of use for fans (9 h) and TVs (5 h); fridge-freezers about 1 kWh a day
+  - title: Victron Energy, Phoenix Inverter VE.Direct 250-1600 W datasheet
+    url: https://www.victronenergy.com/upload/documents/Datasheet-Inverter-VE.Direct-250W-1600W-230V-EN.pdf
+    note: 24 V models - zero-load power 8-11 W, efficiency 88-91 %, peak about 1.5 x continuous
+  - title: Victron Energy, Lithium Battery Smart, technical data
+    url: https://www.victronenergy.com/media/pg/Lithium_Battery_Smart/en/technical-data.html
+    note: LiFePO4 round trip 92 %; cycle life at 80 % depth of discharge
+  - title: Victron Energy, Matching solar modules to MPPT charge regulators
+    url: https://www.victronenergy.com/blog/2014/3/28/matching-victron-energy-solar-modules-to-the-new-mppt-charge-regulators
+    note: controller current = PV watts / battery volts x 0.975
+  - title: Dobos (2014), PVWatts Version 5 Manual, NREL/TP-6A20-62641
+    url: https://webarchive.library.unt.edu/web/20170124203116/http://www.nrel.gov/docs/fy14osti/62641.pdf
+    note: default system losses 14 %, not counting heat (basis of the 0.75 panel-to-battery factor)
+  - title: WHO PQS, Solar autonomy calculation method (2011)
+    url: https://extranet.who.int/prequal/key-resources/documents/solar-autonomy-calculation-method
+    note: worst-month sizing; at least 3 days (5 without site data) for vaccine fridges; array x 1.25
+  - title: Victron Energy, Orion-Tr Smart isolated DC-DC, specifications
+    url: https://www.victronenergy.com/media/pg/Orion-Tr_Smart_DC-DC_Charger_-_Isolated/en/specifications.html
+    note: 24 to 12 V converter efficiency 88 % (basis of the 0.9 DC factor)
+  - title: ESMAP (2015), Beyond Connections - Energy Access Redefined, executive summary
+    url: https://www.worldbank.org/content/dam/Worldbank/Topics/Energy%20and%20Extract/Beyond_Connections_Energy_Access_Redefined_Exec_ESMAP_2015.pdf
+    note: MTF capacity tiers (power and daily energy)
+---
+
+import SystemEstimator from '../../../components/SystemEstimator.astro';
+import DeviceTable from '../../../components/DeviceTable.astro';
+
+List the devices a home or building will run: lights, phones, a laptop, a router, a fan, a fridge.
+The estimator adds up the energy they use each day and suggests a battery, solar panels, a charge
+controller and, if needed, an inverter. It is for planning and for comparing choices, before you
+buy anything.
+
+:::caution
+This is an estimate, not a design. It does not choose wire sizes or fuses. Before you buy or wire
+anything, check each part against its manual and against [the code](/code/safety-model/).
+:::
+
+## Use the estimator
+
+1. Pick an example that looks like your home, or start with an empty list.
+2. Add your devices. Change **how many**, **watts** and **hours a day** to match your own.
+3. Tick **AC?** only for devices that must plug into a normal wall socket (they need an
+   inverter).
+4. Set the **sun hours** for your place, and how many days without sun the battery must cover.
+5. Read the estimate. **Copy a link** to keep it or send it to an installer, or print it.
+
+The estimator remembers your list in this browser.
+
+<SystemEstimator />
+
+## How the estimate works
+
+The estimator does the same steps as [Energy and load budgets](/plan/energy-and-load-budgets/)
+and [Sizing panels and batteries](/plan/sizing-panels-and-batteries/), with a little more
+detail. You can change every number below under **More settings**.
+
+1. **Energy each device uses**: watts × hours a day × how many. A 5 W bulb for 5 hours is
+   25 Wh. Four of them are 100 Wh.
+2. **Add the losses** between the battery and the devices. DC devices: divide by 0.9 (step-down
+   converters, USB chargers, wire). AC devices: divide by 0.85 (the inverter).
+3. **Add the inverter's idle power** if any device needs AC: idle watts × the hours the inverter
+   is on. A good 24 V inverter of 500-800 W uses about 8-10 W doing nothing; an AC fridge keeps it
+   on for 24 hours, which is 240 Wh a day.
+4. **Battery** = energy per day × days without sun ÷ 0.8. You plan to use 80 % of a lithium iron
+   phosphate (LiFePO₄) battery, so it keeps a reserve as it ages.
+5. **Panels** = energy per day ÷ (sun hours × 0.75 × 0.92). The 0.75 covers heat, dust, wiring
+   and the charge controller: a panel rarely gives its label watts on a roof. The 0.92 is the
+   battery's round trip: you get back about 92 % of what goes in.
+6. **Charge controller** = panel watts ÷ battery volts × 0.975. This is the most current the
+   panels can push into the battery. Pick the next size up.
+7. **Everything on at once**: the sum of all watts, and the current that takes from the battery.
+   Each DC device also gets its [branch class](/code/overcurrent-protection/#dist-15-branch-classes)
+   (limited, standard or power). Fridges take about twice their running power for a moment when
+   the compressor starts.
+8. **Inverter**, if needed: at least 25 % above the AC devices' watts, with a peak rating that
+   covers a motor starting.
+9. **Size and tier**: the [system size](/plan/system-sizes/) follows from the battery
+   (up to 0.5 kWh is A, 2.5 kWh is B, 5 kWh is C). The MTF tier shows which
+   [Multi-Tier Framework](/plan/system-sizes/#sizes-and-the-multi-tier-framework) capacity level
+   your list of loads needs.
+
+The system voltage, when you let the estimator choose, is 12 V for a small kit (up to 0.5 kWh
+and 150 W), 48 V above 5 kWh or 1 500 W, and 24 V for everything between. See
+[Choose a system voltage](/plan/choose-a-system-voltage/).
+
+### Sun hours
+
+**Sun hours** (peak sun hours) are the hours of full, strong sun a panel gets in a day, added up.
+Use the **worst month** in which you need the power, not the yearly average. Find them for your
+place on [Global Solar Atlas](https://globalsolaratlas.info/), [PVGIS](https://re.jrc.ec.europa.eu/pvg_tools/en/)
+or [NASA POWER](https://power.larc.nasa.gov/). In most tropical places the worst month gives
+3 to 5 sun hours; the estimator starts at 4.
+
+### Days without sun
+
+One day of battery suits most homes: the panels refill it the next day. Choose 2 where cloudy
+spells are common. Loads that must never stop need far more: the World Health Organization asks
+at least 3 days, and 5 without good local weather data, for a solar vaccine fridge, plus 25 % more
+panel.
+
+## Worked example
+
+The example "Home with laptop and internet", with 4 sun hours:
+
+| Device | How many | Watts | Hours | Wh a day |
+|---|---|---|---|---|
+| LED bulb | 4 | 5 | 5 | 100 |
+| Night light | 1 | 1 | 10 | 10 |
+| Smartphone charging | 4 | 10 | 1.5 | 60 |
+| Laptop | 1 | 20 | 4 | 80 |
+| Wi-Fi router | 1 | 10 | 24 | 240 |
+| Table fan | 1 | 10 | 9 | 90 |
+| Starlink Mini | 1 | 30 | 6 | 180 |
+| **Total** | | | | **760** |
+
+- From the battery: 760 Wh ÷ 0.9 = **844 Wh a day**.
+- Battery: 844 Wh × 1 day ÷ 0.8 = **1.06 kWh**. At 24 V that is 1 056 ÷ 25.6 = 41 Ah: one
+  24 V 50 Ah pack.
+- Panels: 844 Wh ÷ (4 h × 0.75 × 0.92) = **306 W**: one 450 W panel, with room to spare.
+- Charge controller: 450 W ÷ 25.6 V × 0.975 = 17 A: a **20 A MPPT** controller.
+- Everything on at once: 131 W, about 6 A from the battery.
+- Result: **Size B**. The router, on all day, uses more energy than anything else.
+
+## Typical devices
+
+These are the starting values in the estimator. The watts come from lab tests and makers' data
+(see the source column); the hours are planning guesses. Your own device's label or manual is
+better: look for watts (W), or volts × amps (V × A).
+
+:::note
+Makers often test fridges in a cool room (21-25 °C). In a 32 °C room the same fridge can use three
+times as much. Use a lab value tested at 32 °C where you can find one.
+:::
+
+<DeviceTable />
+
+## Ways to need less
+
+- **Keep it DC.** An inverter wastes energy just by being on ([LOAD-1.3](/code/outputs-and-loads/#load-13-dc-loads-first)).
+- **Choose a DC fridge** over an AC fridge on an inverter ([the fridge problem](/plan/energy-and-load-budgets/#the-fridge-problem)).
+- **Put always-on devices on a timer.** A router or satellite dish that runs 24 hours is often the
+  biggest load in a small home.
+- **Use heavy loads in the middle of the day**, when the sun is strong, not at night.
+- **Leave cooking and heating out.** Kettles, irons, hair dryers and electric stoves need far more
+  power than these systems give.
+
+## What the estimate does not do
+
+- Choose wires and fuses: see [DIST-1](/code/overcurrent-protection/),
+  [DIST-2](/code/wiring/) and the main fuse rule [STO-2.4](/code/battery-fuse-and-isolator/#sto-24-size-the-main-fuse-to-its-cable).
+- Check the panel voltage in cold weather: see [GEN-1.1](/code/solar-array/#gen-11-panel-voltage-in-the-cold).
+- Allow for shade. One tree branch can cut a panel's output by a third or more: mount panels in
+  full sun.
+- Plan for growth. If you expect to add a fridge or more rooms later, choose a battery and
+  controller with room to grow.
+
+## When to get help
+
+Get an experienced installer or a licensed electrician if the estimate shows **Size D**, more than
+1 500 W at once, an inverter above 1 000 W, or anything that connects to a building's mains
+wiring. Wiring rules differ by country.

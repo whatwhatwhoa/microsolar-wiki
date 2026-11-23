@@ -3,7 +3,7 @@ title: Why not a power station?
 description: When a sealed portable power station makes sense, and why a DC system usually wins for homes.
 status: draft
 sidebar:
-  order: 7
+  order: 8
 sources: []
 ---
 
