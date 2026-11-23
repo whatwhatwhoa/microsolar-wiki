@@ -1,0 +1,7 @@
+# Standard clause numbers (ABYC E-11 11.12.1.4, AS/NZS 5139 4.2.2.1, IEC 3.3.6.2) look like IP
+# addresses. First number 1-9 or 11 only, so 10.x.x.x private addresses are still caught.
+re:^(?:[1-9]|11)\.\d{1,2}\.\d{1,2}\.\d{1,2}$
+# Electronic part numbers in the seed safety study, not device serials
+SMBJ33CA
+SLVSET9G
+TPS16630
