@@ -11,11 +11,13 @@ hero:
       icon: right-arrow
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid>
-	<Card title="Plan your system" icon="pencil">How much power you need, and the panel and battery that supply it.</Card>
-	<Card title="Choose parts" icon="puzzle">Panels, charge controllers, batteries, fuses and wire.</Card>
-	<Card title="Install and wire" icon="setting">The order to connect things, and how to mount them.</Card>
-	<Card title="Stay safe" icon="warning">Fuses, battery fire risks, wire heat, and when to call an electrician.</Card>
+	<LinkCard title="A day with solar" description="What one panel and one battery do for a household, with the numbers." href="/start-here/a-day-with-solar/" />
+	<LinkCard title="Plan your system" description="Pick a size, then size the battery and panels from your own list of devices." href="/plan/system-estimator/" />
+	<LinkCard title="Buy the parts" description="What local markets sell, the fakes to watch for, and what to use when a part is missing." href="/plan/buying-parts/" />
+	<LinkCard title="Wire it" description="Cable, fuses and layout from the battery to every outlet." href="/install/distribution-wiring/" />
+	<LinkCard title="The code" description="Numbered safety rules a community can build to and check against." href="/code/safety-model/" />
+	<LinkCard title="Keep it running" description="Regular checks, and what to do when something stops working." href="/maintain/troubleshooting/" />
 </CardGrid>
