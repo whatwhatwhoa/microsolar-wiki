@@ -81,6 +81,28 @@ Ideal for first-time users, disaster kits, or one small room.
 - **What it feels like:** extremely simple. You plug things in and they work, but you notice the
   limits quickly. It is a convenience layer, not a home system.
 
+Size A is about running the first things that matter: light, communication, learning and a little
+comfort. It is not meant to run appliances, electric cooking or heating, and even internet
+equipment runs on a schedule. **Energy is plentiful during the day and valuable at night.** If
+that limit is clear to everyone, Size A works very well.
+
+### Two ways to build Size A
+
+| | All-in-one box (solar power bank, power station) | Commodity parts (panel + battery + simple distribution) |
+|---|---|---|
+| Setup | Fast. Little training. Everything plugs into one place. | More care: parts are mounted, labelled and routed. |
+| Where power is | Near the box only | Lights and outlets where people use them |
+| When a part fails | Often the whole unit is replaced | Only that part is replaced |
+| Solar input | Often a maker-only connector with a narrow voltage range | Any standard panel |
+| Growing later | Hard: buy another box | Add a panel, a branch, or move up to Size B |
+| Best when | Speed matters more than repair; the system is an appliance | An installer or NGO is involved; repair and growth matter |
+
+All-in-one boxes have the lowest price at the start but the least usable energy, and they are hard
+to expand: see [Why not a power station?](/plan/power-stations/). Commodity parts cost more at the
+start but give more usable energy, better placed lights and outlets, and a much longer life. A
+Size A system built from commodity parts is a first step to Size B without tearing anything out.
+[A day with solar](/start-here/a-day-with-solar/) shows one such household.
+
 ## Size B: Home
 
 **"The smallest real home system."** The first size that supports a daily routine without
