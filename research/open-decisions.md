@@ -20,3 +20,8 @@ updated; the reason goes into the rule's *Why*.
 - **Owner's Lark pages not yet exported**: Introduction; Distribution subpages (wiring standards,
   connectors and plugs, protection and fuses, outlets, splicing, DC breaker); Battery Storage;
   Power Generation; the tier pages; Part III Specific Applications; Academia for further reading.
+- **Estimator defaults** (plan/system-estimator, `src/components/estimator/catalog.ts`): battery
+  covers 1 day without sun (the owner's "about a day's worth") or 2 days (WHO site table: about
+  2.3 days median with a 1.25 array oversize; `loads-and-sizing.md` B.4). Inverter idle 10 W
+  (Victron datasheet 8 W, one measured 10 W) or higher for cheap inverters (the owner's notes say
+  25-50 W). Starlink figures are from search excerpts only; check them by hand.

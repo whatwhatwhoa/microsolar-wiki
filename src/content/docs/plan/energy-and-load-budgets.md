@@ -42,6 +42,9 @@ numbers say, not what you hope. Write down what you actually use, not what you m
 That total, in Wh per day, drives everything else. If a system feels underpowered, it usually
 means someone skipped steps 1-4.
 
+The [System estimator](/plan/system-estimator/) does these steps for you, with typical values for
+common devices.
+
 ## Slot-based budgeting
 
 For non-technical users, dividing power into "slots" helps. For example, one slot = 10 W of

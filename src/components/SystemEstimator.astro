@@ -1,0 +1,802 @@
+---
+// Interactive system estimator: list devices, get daily energy, battery, panels, controller,
+// inverter, size and MTF tier. Numbers: ./estimator/catalog.ts; arithmetic: ./estimator/calc.ts.
+// Runs in the browser only; state is kept in localStorage and can be shared as a link (#est=...).
+import { DEVICES, GROUPS, PRESETS } from './estimator/catalog';
+
+const groups = Object.entries(GROUPS).map(([g, label]) => ({
+	label,
+	devices: DEVICES.filter((d) => d.group === g),
+}));
+---
+
+<div class="est not-content" data-estimator>
+	<section class="est-step">
+		<h3><span class="est-n">1</span> Start from an example, or from nothing</h3>
+		<div class="est-buttons">
+			{PRESETS.map((p) => <button type="button" data-preset={p.id}>{p.name}</button>)}
+			<button type="button" data-preset="">Empty list</button>
+		</div>
+	</section>
+
+	<section class="est-step">
+		<h3><span class="est-n">2</span> List your devices</h3>
+		<p class="est-hint">
+			Change the numbers to match your own devices. The watts are on the device label or its
+			charger. Hours are hours a day the device is really on.
+		</p>
+		<div class="est-rows" role="table" aria-label="Devices">
+			<div class="est-row est-head" role="row">
+				<span role="columnheader">Device</span>
+				<span role="columnheader">How many</span>
+				<span role="columnheader">Watts each</span>
+				<span role="columnheader">Hours a day</span>
+				<span role="columnheader" title="Needs an inverter (AC)">AC?</span>
+				<span role="columnheader">Wh a day</span>
+				<span role="columnheader"><span class="est-sr">Remove</span></span>
+			</div>
+			<div data-rows></div>
+			<div class="est-row est-total" role="row">
+				<span role="cell">Total the devices use</span>
+				<span role="cell"></span><span role="cell"></span><span role="cell"></span><span role="cell"></span>
+				<span role="cell" class="est-num" data-total></span>
+				<span role="cell"></span>
+			</div>
+		</div>
+		<div class="est-add">
+			<label for="est-add-select">Add a device</label>
+			<select id="est-add-select" data-add>
+				<option value="">Choose…</option>
+				{groups.map((g) => (
+					<optgroup label={g.label}>
+						{g.devices.map((d) => <option value={d.id}>{d.name} ({d.w} W)</option>)}
+					</optgroup>
+				))}
+			</select>
+		</div>
+	</section>
+
+	<section class="est-step">
+		<h3><span class="est-n">3</span> Your place and choices</h3>
+		<div class="est-settings">
+			<label>
+				<span>Sun hours a day, worst month</span>
+				<input type="number" min="1" max="8" step="0.1" data-set="sun" />
+				<small>Look it up for your place: <a href="https://globalsolaratlas.info/">Global Solar Atlas</a> or <a href="https://re.jrc.ec.europa.eu/pvg_tools/en/">PVGIS</a>. Most places: 3-6.</small>
+			</label>
+			<label>
+				<span>Days with no sun the battery must cover</span>
+				<input type="number" min="0.5" max="5" step="0.5" data-set="days" />
+				<small>1 for a home, 2 where cloudy spells are common. A vaccine fridge needs at least 3 (WHO).</small>
+			</label>
+			<label>
+				<span>System voltage</span>
+				<select data-set="voltage">
+					<option value="auto">Choose for me</option>
+					<option value="12">12 V</option>
+					<option value="24">24 V</option>
+					<option value="48">48 V</option>
+				</select>
+				<small><a href="/plan/choose-a-system-voltage/">Which voltage?</a></small>
+			</label>
+			<label>
+				<span>Panel size, watts</span>
+				<input type="number" min="50" max="700" step="10" data-set="panelW" />
+				<small>Commodity panels are 400-500 W.</small>
+			</label>
+		</div>
+		<details class="est-more">
+			<summary>More settings (losses)</summary>
+			<div class="est-settings">
+				<label>
+					<span>Panel to battery, share kept</span>
+					<input type="number" min="0.5" max="0.95" step="0.01" data-set="derate" />
+					<small>Heat, dust, controller and wire losses. 0.75 = 75 %.</small>
+				</label>
+				<label>
+					<span>Battery round trip, share kept</span>
+					<input type="number" min="0.8" max="1" step="0.01" data-set="rt" />
+					<small>Energy you get back out of the battery for each unit put in.</small>
+				</label>
+				<label>
+					<span>Battery share you plan to use</span>
+					<input type="number" min="0.5" max="1" step="0.05" data-set="dod" />
+					<small>LiFePO₄: 0.8 keeps a reserve as the battery ages.</small>
+				</label>
+				<label>
+					<span>Battery to DC devices, share kept</span>
+					<input type="number" min="0.7" max="1" step="0.01" data-set="dcEff" />
+					<small>Converters (24 V to USB or 12 V), battery and wire losses.</small>
+				</label>
+				<label>
+					<span>Inverter efficiency</span>
+					<input type="number" min="0.7" max="0.98" step="0.01" data-set="invEff" />
+				</label>
+				<label>
+					<span>Inverter idle power, W</span>
+					<input type="number" min="0" max="100" step="1" data-set="invIdle" />
+					<small>On the datasheet as "no-load" or "zero-load" power. Cheap inverters often use more than they state.</small>
+				</label>
+			</div>
+			<button type="button" data-reset-settings>Back to the defaults</button>
+		</details>
+	</section>
+
+	<section class="est-step" aria-live="polite">
+		<h3><span class="est-n">4</span> Your estimate</h3>
+		<div data-out></div>
+		<div class="est-buttons est-actions">
+			<button type="button" data-copy-link>Copy a link to this estimate</button>
+			<button type="button" data-copy-text>Copy as text</button>
+			<button type="button" data-print>Print</button>
+			<span class="est-flash" data-flash role="status"></span>
+		</div>
+	</section>
+</div>
+
+<script>
+	import { DEFAULTS, PRESETS, byId } from './estimator/catalog';
+	import { estimate, type Row, type Settings, type Result } from './estimator/calc';
+
+	const KEY = 'microsolar-estimator-v1';
+	const root = document.querySelector<HTMLElement>('[data-estimator]')!;
+	const rowsEl = root.querySelector<HTMLElement>('[data-rows]')!;
+	const outEl = root.querySelector<HTMLElement>('[data-out]')!;
+	const totalEl = root.querySelector<HTMLElement>('[data-total]')!;
+	const flashEl = root.querySelector<HTMLElement>('[data-flash]')!;
+
+	let rows: Row[] = [];
+	let settings: Settings = { ...DEFAULTS };
+	let last: Result | null = null;
+
+	// ---- formatting --------------------------------------------------------------------------
+	const nb = ' ';
+	const group3 = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, nb);
+	const num = (n: number, d = 0) => {
+		const s = n.toFixed(d);
+		const [i, f] = s.split('.');
+		return group3(Number(i)) + (f && Number(f) !== 0 ? '.' + f : '');
+	};
+	const energy = (wh: number) => (wh >= 1000 ? `${num(wh / 1000, wh >= 10000 ? 1 : 2)}${nb}kWh` : `${num(wh)}${nb}Wh`);
+	const power = (w: number) => (w >= 1000 ? `${num(w / 1000, 2)}${nb}kW` : `${num(w)}${nb}W`);
+	const esc = (s: string) =>
+		s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+	// ---- state -------------------------------------------------------------------------------
+	const fromCatalog = (id: string, qty = 1): Row => {
+		const d = byId(id) ?? byId('other')!;
+		return { id: d.id, name: d.name, qty, w: d.w, h: d.h, ac: !!d.ac };
+	};
+
+	function loadPreset(id: string) {
+		const p = PRESETS.find((x) => x.id === id);
+		rows = p ? p.rows.map(([d, q]) => fromCatalog(d, q)) : [];
+	}
+
+	// Compact form for links and storage: rows as [id, qty, w, h, ac, name?]; settings that differ.
+	function pack() {
+		const r = rows.map((x) => {
+			const d = byId(x.id);
+			const a: (string | number)[] = [x.id, x.qty, x.w, x.h, x.ac ? 1 : 0];
+			if (!d || d.name !== x.name) a.push(x.name);
+			return a;
+		});
+		const s: Partial<Settings> = {};
+		for (const k of Object.keys(DEFAULTS) as (keyof Settings)[]) {
+			if (settings[k] !== DEFAULTS[k]) (s as Record<string, unknown>)[k] = settings[k];
+		}
+		return { r, s };
+	}
+
+	function unpack(o: { r?: unknown[]; s?: Partial<Settings> }) {
+		if (!Array.isArray(o.r)) throw new Error('bad');
+		rows = o.r.map((a) => {
+			const [id, qty, w, h, ac, name] = a as [string, number, number, number, number, string?];
+			const d = byId(String(id));
+			return {
+				id: d ? d.id : 'other',
+				name: String(name ?? d?.name ?? 'Device').slice(0, 80),
+				qty: Math.max(0, Number(qty) || 0),
+				w: Math.max(0, Number(w) || 0),
+				h: Math.min(24, Math.max(0, Number(h) || 0)),
+				ac: !!ac,
+			};
+		});
+		settings = { ...DEFAULTS };
+		for (const [k, v] of Object.entries(o.s ?? {})) {
+			if (!(k in DEFAULTS)) continue;
+			(settings as Record<string, unknown>)[k] = k === 'voltage' ? (v === 'auto' ? 'auto' : Number(v)) : Number(v);
+		}
+	}
+
+	const encode = (o: object) =>
+		btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+	const decode = (s: string) =>
+		JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/')))));
+
+	function save() {
+		try {
+			localStorage.setItem(KEY, JSON.stringify(pack()));
+		} catch {
+			/* storage off: the page still works */
+		}
+	}
+
+	function init() {
+		const m = location.hash.match(/est=([\w-]+)/);
+		try {
+			if (m) return unpack(decode(m[1]));
+		} catch {
+			/* a broken link falls through to storage */
+		}
+		try {
+			const s = localStorage.getItem(KEY);
+			if (s) return unpack(JSON.parse(s));
+		} catch {
+			/* fall through */
+		}
+		loadPreset('b');
+	}
+
+	// ---- rendering ---------------------------------------------------------------------------
+	function renderRows() {
+		rowsEl.innerHTML = rows
+			.map((r, i) => {
+				const d = byId(r.id);
+				const note = d?.note ? `<div class="est-note">${esc(d.note)}</div>` : '';
+				return `<div class="est-row" role="row" data-i="${i}">
+	<span role="cell" class="est-name"><input type="text" value="${esc(r.name)}" data-f="name" aria-label="Device name" maxlength="80" /></span>
+	<span role="cell"><input type="number" min="0" max="999" step="1" value="${r.qty}" data-f="qty" aria-label="How many: ${esc(r.name)}" /></span>
+	<span role="cell"><input type="number" min="0" max="5000" step="any" value="${r.w}" data-f="w" aria-label="Watts each: ${esc(r.name)}" /></span>
+	<span role="cell"><input type="number" min="0" max="24" step="0.5" value="${r.h}" data-f="h" aria-label="Hours a day: ${esc(r.name)}" /></span>
+	<span role="cell"><input type="checkbox" ${r.ac ? 'checked' : ''} data-f="ac" aria-label="Needs AC (inverter): ${esc(r.name)}" /></span>
+	<span role="cell" class="est-num" data-wh></span>
+	<span role="cell"><button type="button" class="est-x" data-remove aria-label="Remove ${esc(r.name)}">×</button></span>${note}
+</div>`;
+			})
+			.join('');
+		if (!rows.length) rowsEl.innerHTML = '<p class="est-empty">No devices yet. Add one below.</p>';
+	}
+
+	function renderSettings() {
+		root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-set]').forEach((el) => {
+			el.value = String(settings[el.dataset.set as keyof Settings]);
+		});
+	}
+
+	const card = (label: string, value: string, sub = '') =>
+		`<div class="est-card"><div class="est-card-label">${label}</div><div class="est-card-value">${value}</div>${sub ? `<div class="est-card-sub">${sub}</div>` : ''}</div>`;
+
+	function render() {
+		const r = (last = estimate(rows, settings));
+
+		// Per-row energy and branch class.
+		rowsEl.querySelectorAll<HTMLElement>('.est-row').forEach((el) => {
+			const row = rows[Number(el.dataset.i)];
+			const res = r.rows.find((x) => x.row === row);
+			const cell = el.querySelector<HTMLElement>('[data-wh]')!;
+			const badge = res?.branch
+				? `<span class="est-badge" title="Branch class for one device at ${r.volts} V (DIST-1.5)">${res.branch}</span>`
+				: res?.row.ac
+					? '<span class="est-badge est-badge-ac" title="Runs from the inverter">AC</span>'
+					: '';
+			cell.innerHTML = `${res ? num(res.wh) : '0'}${badge}`;
+		});
+		totalEl.textContent = energy(r.whDevices);
+
+		if (!r.rows.length) {
+			outEl.innerHTML = '<p class="est-empty">Add at least one device to see an estimate.</p>';
+			return;
+		}
+
+		const losses = r.whDaily - r.whDevices - r.whIdle;
+		const voltsNote = r.voltsAuto ? 'chosen for you from the size and the biggest load' : 'your choice';
+		const panelText =
+			r.pvW <= 200
+				? `one ${r.panelW}${nb}W panel`
+				: `${r.panels} × ${r.panelW}${nb}W panel${r.panels > 1 ? 's' : ''} (${power(r.pvInstalledW)})`;
+
+		const cards = [
+			card('Energy from the battery each day', energy(r.whDaily),
+				`devices ${energy(r.whDevices)} + losses ${energy(losses)}${r.whIdle ? ` + inverter idle ${energy(r.whIdle)}` : ''}`),
+			card('Battery (LiFePO₄)', energy(r.batteryWh), `about ${num(r.batteryAh)}${nb}Ah at ${r.volts}${nb}V: ${r.packText}`),
+			card('Solar panels', panelText, `at least ${power(r.pvW)} for ${settings.sun} sun hours`),
+			card('Charge controller', r.mpptPick ? `${r.mpptPick}${nb}A` : `${num(r.mpptA)}${nb}A`,
+				`the panels can push about ${num(r.mpptA)}${nb}A into a ${r.volts}${nb}V battery${r.size === 'A' ? '' : '; use an MPPT type'}`),
+			card('System voltage', `${r.volts}${nb}V`, voltsNote),
+			card('Everything on at once', power(r.peakW),
+				`about ${num(r.mainA)}${nb}A from the battery${r.surgeW > r.peakW ? `; ${power(r.surgeW)} for a moment when a motor starts` : ''}`),
+			r.anyAc
+				? card('Inverter', `at least ${power(r.inverterW)}`, `for ${power(r.acPeakW)} of AC devices${r.acSurgeW > r.acPeakW ? `, surge ${power(r.acSurgeW)}` : ''}; on ${num(r.invHours, 1)}${nb}h a day`)
+				: '',
+			card('System size', `<a href="/plan/system-sizes/#size-${r.size.toLowerCase()}-${{ A: 'kit', B: 'home', C: 'home-plus', D: 'community' }[r.size]}">Size ${r.size}</a>`,
+				{ A: 'Kit', B: 'Home', C: 'Home Plus', D: 'Community: beyond this wiki today' }[r.size]),
+			card('MTF capacity tier', r.mtfTier ? `Tier ${r.mtfTier}` : 'Below Tier 1',
+				'what these loads need (power and energy only)'),
+		].join('');
+
+		// Where the energy goes: rows sorted by battery energy, plus inverter idle and losses.
+		const parts = r.rows
+			.map((x) => ({ name: `${x.row.qty > 1 ? x.row.qty + ' × ' : ''}${x.row.name}`, wh: x.whBattery }))
+			.concat(r.whIdle ? [{ name: 'Inverter idle (waiting)', wh: r.whIdle }] : [])
+			.sort((a, b) => b.wh - a.wh);
+		const max = Math.max(...parts.map((p) => p.wh), 1);
+		const bars = parts
+			.map(
+				(p) => `<li><span class="est-bar-label">${esc(p.name)}</span><span class="est-bar"><span style="width:${((100 * p.wh) / max).toFixed(1)}%"></span></span><span class="est-num">${energy(p.wh)} · ${Math.round((100 * p.wh) / r.whDaily)}${nb}%</span></li>`,
+			)
+			.join('');
+
+		const warns = r.warnings
+			.map(
+				(w) =>
+					`<li class="est-warn est-warn-${w.level}">${esc(w.text)}${w.href ? ` <a href="${w.href}">${esc(w.link ?? 'More')}</a>` : ''}</li>`,
+			)
+			.join('');
+
+		outEl.innerHTML = `<div class="est-cards">${cards}</div>
+<h4>Where the energy goes</h4>
+<ul class="est-bars">${bars}</ul>
+${warns ? `<h4>Check these</h4><ul class="est-warns">${warns}</ul>` : ''}
+<p class="est-hint">An estimate to plan and compare with, not a design. Check every part against its manual and <a href="/code/safety-model/">the code</a> before you buy or wire anything.</p>`;
+	}
+
+	function summaryText(r: Result) {
+		const lines = [
+			'Micro Solar DC Wiki - system estimate',
+			'',
+			'Devices:',
+			...r.rows.map((x) => `- ${x.row.qty} x ${x.row.name}: ${x.row.w} W, ${x.row.h} h/day${x.row.ac ? ', AC' : ''} = ${num(x.wh)} Wh/day`),
+			'',
+			`Energy from the battery: ${energy(r.whDaily)}/day (devices ${energy(r.whDevices)}${r.whIdle ? `, inverter idle ${energy(r.whIdle)}` : ''})`,
+			`Battery: ${energy(r.batteryWh)}, about ${num(r.batteryAh)} Ah at ${r.volts} V (${r.packText})`,
+			`Panels: ${r.pvW <= 200 ? `one ${r.panelW} W panel` : `${r.panels} x ${r.panelW} W`} (needs at least ${power(r.pvW)})`,
+			`Charge controller: ${r.mpptPick ?? num(r.mpptA)} A MPPT`,
+			`Everything on at once: ${power(r.peakW)}, about ${num(r.mainA)} A from the battery`,
+			...(r.anyAc ? [`Inverter: at least ${power(r.inverterW)}`] : []),
+			`Size ${r.size}; MTF capacity Tier ${r.mtfTier || '0'}`,
+			'',
+			`Settings: ${settings.sun} sun hours, ${settings.days} day(s) of battery, panel-to-battery ${settings.derate}, battery use ${settings.dod}`,
+			...r.warnings.map((w) => `! ${w.text}`),
+		];
+		return lines.join('\n');
+	}
+
+	// ---- events ------------------------------------------------------------------------------
+	function changed(structure = false) {
+		if (structure) renderRows();
+		render();
+		save();
+	}
+
+	rowsEl.addEventListener('input', (e) => {
+		const t = e.target as HTMLInputElement;
+		const el = t.closest<HTMLElement>('.est-row');
+		if (!el || !t.dataset.f) return;
+		const row = rows[Number(el.dataset.i)];
+		const f = t.dataset.f as keyof Row;
+		if (f === 'name') row.name = t.value;
+		else if (f === 'ac') row.ac = t.checked;
+		else {
+			const v = Math.max(0, Number(t.value) || 0);
+			(row as unknown as Record<string, number>)[f] = f === 'h' ? Math.min(24, v) : v;
+		}
+		changed();
+	});
+
+	rowsEl.addEventListener('click', (e) => {
+		const b = (e.target as HTMLElement).closest('[data-remove]');
+		if (!b) return;
+		rows.splice(Number(b.closest<HTMLElement>('.est-row')!.dataset.i), 1);
+		changed(true);
+	});
+
+	root.querySelector<HTMLSelectElement>('[data-add]')!.addEventListener('change', (e) => {
+		const s = e.target as HTMLSelectElement;
+		if (!s.value) return;
+		rows.push(fromCatalog(s.value));
+		s.value = '';
+		changed(true);
+		rowsEl.querySelector<HTMLInputElement>('.est-row:last-child [data-f="qty"]')?.focus();
+	});
+
+	root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) =>
+		b.addEventListener('click', () => {
+			loadPreset(b.dataset.preset!);
+			changed(true);
+		}),
+	);
+
+	root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-set]').forEach((el) =>
+		el.addEventListener('input', () => {
+			const k = el.dataset.set as keyof Settings;
+			if (k === 'voltage') settings.voltage = el.value === 'auto' ? 'auto' : (Number(el.value) as 12 | 24 | 48);
+			else {
+				const v = Number(el.value);
+				if (!(v > 0)) return;
+				(settings as Record<string, unknown>)[k] = v;
+			}
+			changed();
+		}),
+	);
+
+	root.querySelector('[data-reset-settings]')!.addEventListener('click', () => {
+		settings = { ...DEFAULTS };
+		renderSettings();
+		changed();
+	});
+
+	function flash(msg: string) {
+		flashEl.textContent = msg;
+		setTimeout(() => (flashEl.textContent = ''), 2500);
+	}
+
+	async function copy(text: string, msg: string) {
+		try {
+			await navigator.clipboard.writeText(text);
+			flash(msg);
+		} catch {
+			window.prompt('Copy this:', text);
+		}
+	}
+
+	root.querySelector('[data-copy-link]')!.addEventListener('click', () => {
+		const url = `${location.origin}${location.pathname}#est=${encode(pack())}`;
+		history.replaceState(null, '', url);
+		copy(url, 'Link copied.');
+	});
+	root.querySelector('[data-copy-text]')!.addEventListener('click', () => last && copy(summaryText(last), 'Estimate copied.'));
+	root.querySelector('[data-print]')!.addEventListener('click', () => window.print());
+
+	init();
+	renderRows();
+	renderSettings();
+	render();
+</script>
+
+<style is:global>
+	.est {
+		--est-gap: 0.75rem;
+		margin-block: 1.5rem;
+		display: grid;
+		gap: 1.25rem;
+		font-size: var(--sl-text-sm);
+	}
+	.est-step {
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 0.5rem;
+		padding: 1rem;
+		background: var(--sl-color-bg-nav);
+	}
+	.est h3 {
+		font-size: var(--sl-text-lg);
+		font-weight: 600;
+		margin: 0 0 0.75rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--sl-color-white);
+	}
+	.est h4 {
+		font-size: var(--sl-text-base);
+		font-weight: 600;
+		margin: 1.25rem 0 0.5rem;
+		color: var(--sl-color-white);
+	}
+	.est-n {
+		display: inline-grid;
+		place-items: center;
+		width: 1.6rem;
+		height: 1.6rem;
+		border-radius: 50%;
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+		font-size: var(--sl-text-sm);
+		flex: none;
+	}
+	.est-hint {
+		color: var(--sl-color-gray-2);
+		margin: 0 0 0.75rem;
+	}
+	.est a {
+		color: var(--sl-color-text-accent);
+	}
+	.est button {
+		font: inherit;
+		cursor: pointer;
+		border: 1px solid var(--sl-color-gray-5);
+		background: var(--sl-color-bg);
+		color: var(--sl-color-white);
+		border-radius: 0.35rem;
+		padding: 0.4rem 0.75rem;
+	}
+	.est button:hover {
+		border-color: var(--sl-color-accent);
+	}
+	.est-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	.est input,
+	.est select {
+		font: inherit;
+		color: var(--sl-color-white);
+		background: var(--sl-color-bg);
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.3rem;
+		padding: 0.3rem 0.4rem;
+		width: 100%;
+		min-width: 0;
+	}
+	.est input[type='checkbox'] {
+		width: 1.1rem;
+		height: 1.1rem;
+		accent-color: var(--sl-color-accent);
+	}
+	.est input:focus-visible,
+	.est select:focus-visible,
+	.est button:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 1px;
+	}
+
+	/* Device rows */
+	.est-row {
+		display: grid;
+		grid-template-columns: minmax(9rem, 1fr) 4rem 4.5rem 4.5rem 2.5rem 7rem 2rem;
+		gap: 0.5rem;
+		align-items: start;
+		padding-block: 0.35rem;
+		border-bottom: 1px solid var(--sl-color-hairline);
+	}
+	.est > section,
+	.est-row > *,
+	.est-add > * {
+		min-width: 0;
+	}
+	.est-row > span {
+		display: flex;
+		align-items: center;
+		min-height: 2rem;
+	}
+	.est-row > .est-name {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.est-head {
+		font-weight: 600;
+		color: var(--sl-color-gray-2);
+		border-bottom-color: var(--sl-color-gray-5);
+	}
+	.est-total {
+		font-weight: 600;
+		border-bottom: none;
+	}
+	.est-total > span:first-child {
+		grid-column: 1 / 6;
+	}
+	.est-total > span:nth-child(n + 2):nth-child(-n + 5) {
+		display: none;
+	}
+	.est-num {
+		justify-content: flex-end;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		gap: 0.35rem;
+		flex-wrap: wrap;
+	}
+	.est-note {
+		grid-column: 1 / -1;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+		margin-top: -0.2rem;
+	}
+	.est-badge {
+		font-size: var(--sl-text-xs);
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 1rem;
+		padding: 0 0.4rem;
+		color: var(--sl-color-gray-2);
+	}
+	.est-badge-ac {
+		border-color: var(--sl-color-orange);
+		color: var(--sl-color-orange-high);
+	}
+	.est-x {
+		padding: 0.1rem 0.5rem !important;
+		line-height: 1.2;
+	}
+	.est-empty {
+		color: var(--sl-color-gray-3);
+		padding: 0.5rem 0;
+		margin: 0;
+	}
+	.est-add {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		margin-top: 0.75rem;
+		flex-wrap: wrap;
+	}
+	.est-add label {
+		font-weight: 600;
+	}
+	.est-add select {
+		flex: 1 1 14rem;
+		max-width: 32rem;
+	}
+
+	/* Settings */
+	.est-settings {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+		gap: var(--est-gap);
+	}
+	.est-settings label {
+		display: grid;
+		gap: 0.25rem;
+		align-content: start;
+	}
+	.est-settings label > span {
+		font-weight: 600;
+	}
+	.est-settings small {
+		color: var(--sl-color-gray-3);
+	}
+	.est-more {
+		margin-top: 1rem;
+	}
+	.est-more summary {
+		cursor: pointer;
+		font-weight: 600;
+		margin-bottom: 0.75rem;
+	}
+	.est-more button {
+		margin-top: 0.75rem;
+	}
+
+	/* Results */
+	.est-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+		gap: var(--est-gap);
+	}
+	.est-card {
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.4rem;
+		padding: 0.6rem 0.75rem;
+		background: var(--sl-color-bg);
+	}
+	.est-card-label {
+		color: var(--sl-color-gray-2);
+	}
+	.est-card-value {
+		font-size: var(--sl-text-xl);
+		font-weight: 700;
+		color: var(--sl-color-white);
+		font-variant-numeric: tabular-nums;
+	}
+	.est-card-sub {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+	}
+	.est-bars,
+	.est-warns {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 0.35rem;
+	}
+	.est-bars li {
+		display: grid;
+		grid-template-columns: minmax(8rem, 16rem) 1fr auto;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	.est-bar-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.est-bar {
+		height: 0.7rem;
+		background: var(--sl-color-gray-6);
+		border-radius: 0.2rem;
+		overflow: hidden;
+	}
+	.est-bar > span {
+		display: block;
+		height: 100%;
+		background: var(--sl-color-accent);
+	}
+	.est-warn {
+		border-left: 4px solid var(--sl-color-blue);
+		background: var(--sl-color-blue-low);
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.2rem;
+		color: var(--sl-color-white);
+	}
+	.est-warn-caution {
+		border-left-color: var(--sl-color-orange);
+		background: var(--sl-color-orange-low);
+	}
+	.est-actions {
+		margin-top: 1rem;
+	}
+	.est-flash {
+		color: var(--sl-color-green-high);
+	}
+	.est-sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+
+	/* Narrow screens: each device becomes a small card. */
+	@media (max-width: 50rem) {
+		.est-head {
+			display: none;
+		}
+		.est-row {
+			grid-template-columns: 1fr 1fr 1fr 2.5rem;
+			grid-template-areas:
+				'name name name x'
+				'qty w h ac'
+				'wh wh wh wh'
+				'note note note note';
+		}
+		.est-row > :nth-child(1) { grid-area: name; }
+		.est-row > :nth-child(2) { grid-area: qty; }
+		.est-row > :nth-child(3) { grid-area: w; }
+		.est-row > :nth-child(4) { grid-area: h; }
+		.est-row > :nth-child(5) { grid-area: ac; }
+		.est-row > :nth-child(6) { grid-area: wh; }
+		.est-row > :nth-child(7) { grid-area: x; }
+		.est-row > .est-note { grid-area: note; margin-top: 0; }
+		.est-row:not(.est-total) > :nth-child(2)::before { content: 'How many'; }
+		.est-row:not(.est-total) > :nth-child(3)::before { content: 'Watts'; }
+		.est-row:not(.est-total) > :nth-child(4)::before { content: 'Hours'; }
+		.est-row:not(.est-total) > :nth-child(5)::before { content: 'AC'; }
+		.est-row:not(.est-total) > :nth-child(6)::before { content: 'Wh a day'; margin-right: auto; }
+		.est-row:not(.est-total) > :nth-child(-n + 5):nth-child(n + 2) {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.15rem;
+			font-size: var(--sl-text-xs);
+			color: var(--sl-color-gray-3);
+		}
+		.est-total {
+			grid-template-areas: 'name name wh wh';
+		}
+		.est-bars li {
+			grid-template-columns: 1fr auto;
+		}
+		.est-bar {
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+	}
+
+	@media print {
+		.est-buttons,
+		.est-add,
+		.est-x,
+		.est-more summary ~ button,
+		[data-preset] {
+			display: none !important;
+		}
+		.est-more {
+			display: block;
+		}
+		.est-step {
+			break-inside: avoid;
+			background: none;
+		}
+	}
+</style>

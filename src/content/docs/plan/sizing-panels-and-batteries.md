@@ -46,3 +46,6 @@ performance, and widely available as commodity packs.
 | 2 or 3 | 5-7.5 kWh | [Size C](/plan/system-sizes/#size-c-home-plus) and up |
 
 If you run a refrigerator or a desktop PC, plan on at least two panels.
+
+For a closer estimate from your own list of devices, use the
+[System estimator](/plan/system-estimator/).

@@ -3,7 +3,7 @@ title: Install modes
 description: Plug-in hub with cords, or fixed wiring in walls - what changes between them.
 status: draft
 sidebar:
-  order: 6
+  order: 7
 sources:
   - title: IEC TS 62257-9-4:2016, User installation (preview)
     url: https://cdn.standards.iteh.ai/samples/22172/b7ef20fc7ea64326b7b39e9c276976bf/IEC-TS-62257-9-4-2016.pdf
