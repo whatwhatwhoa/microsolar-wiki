@@ -54,6 +54,14 @@ hazard is: when this part fails, what still protects?
 place. Supplementary safeguard: a fuse sized to the wire, which opens if the wire is overloaded or
 shorted.
 
+```mermaid
+flowchart LR
+  H["Hazard:<br/>a branch wire overheats"] --> B["Basic safeguard<br/>wire sized, insulated, fixed"]
+  B -- "single fault:<br/>cord crushed, short" --> S["Supplementary safeguard<br/>fuse sized to the wire opens"]
+  S --> OK["Wire stays cool:<br/>no fire"]
+  E["Electronics: BMS, eFuse"] -. "helps, but<br/>does not count" .-> S
+```
+
 ## SYS-1.3 The safeguard that counts fails safe
 
 **must** - The supplementary safeguard for overcurrent is a device that fails safe: a fuse, or a

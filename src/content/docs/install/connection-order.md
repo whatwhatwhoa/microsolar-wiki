@@ -49,6 +49,20 @@ Your charge controller's manual has the final word. The three makers checked her
 
 ## Steps to connect
 
+```mermaid
+flowchart TD
+  A["1 · Everything open:<br/>isolator, PV disconnect, branch fuses, inverter off"] --> B["2 · Main fuse and isolator<br/>to the battery"]
+  B --> C["3 · Controller to battery<br/>(fuse at battery end)"]
+  C --> D{"4 · Polarity right?<br/>meter shows + volts"}
+  D -- "No" --> X["Stop. Find the reversed cable."]
+  D -- "Yes" --> E["5 · Close the isolator.<br/>Controller shows 12 or 24 V"]
+  E --> F["6 · Inverter (if any),<br/>to the battery side"]
+  F --> G["7 · Branch fuses in,<br/>one branch at a time"]
+  G --> H["8 · Panels last:<br/>check Voc and polarity, close PV disconnect"]
+  H --> I["Commissioning checks"]
+```
+
+
 1. **Everything open.** The battery isolator is open
    ([STO-2.5](/code/battery-fuse-and-isolator/#sto-25-battery-isolator)), the PV disconnect is open
    ([GEN-1.3](/code/solar-array/#gen-13-pv-disconnect)), the branch fuses or breakers are out, and

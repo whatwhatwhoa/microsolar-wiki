@@ -41,6 +41,30 @@ installer. Switch the battery isolator off before you touch any terminal. If you
 see melted insulation, switch everything off and call the installer: do not troubleshoot.
 :::
 
+## Where to start
+
+```mermaid
+flowchart TD
+  S{"What is wrong?"} --> NC["Battery not charging"]
+  S --> AO["Everything is off"]
+  S --> OB["One branch is off"]
+  S --> IV["Inverter shuts down"]
+  S --> ER["Error number on<br/>the controller"]
+  NC --> NC1{"Panel voltage at the<br/>PV disconnect?"}
+  NC1 -- "near 0 V" --> NC2["PV fuse, connector<br/>or cable"]
+  NC1 -- "normal" --> NC3["Controller battery fuse<br/>or isolator"]
+  AO --> AO1{"Battery voltage?"}
+  AO1 -- "low" --> AO2["Battery empty: loads off,<br/>let it recharge"]
+  AO1 -- "0 V or jumping" --> AO3["BMS has cut off:<br/>isolator off, call installer"]
+  OB --> OB1["Unplug devices, same-rating<br/>fuse, plug back one by one"]
+  IV --> IV1["Motor start too big, or<br/>voltage drop on battery cable"]
+  ER --> ER1["Look up the number<br/>in the manual"]
+```
+
+Each box is explained in the sections below. [The battery is not charging](#the-battery-is-not-charging) ·
+[Loads cut out](#loads-cut-out) · [The inverter shuts down](#the-inverter-shuts-down) ·
+[Controller errors](#controller-errors).
+
 ## What you need
 
 - A multimeter (any cheap one) that reads DC volts.

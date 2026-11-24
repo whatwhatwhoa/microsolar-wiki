@@ -69,6 +69,16 @@ The estimator does the same steps as [Energy and load budgets](/plan/energy-and-
 and [Sizing panels and batteries](/plan/sizing-panels-and-batteries/), with a little more
 detail. You can change every number below under **More settings**.
 
+```mermaid
+flowchart LR
+  D["Your devices<br/>W × h × count"] --> E["Energy per day<br/>+ losses, + inverter idle"]
+  E --> B["Battery<br/>× days without sun ÷ 0.8"]
+  E --> P["Panels<br/>÷ (sun hours × 0.75 × 0.92)"]
+  P --> C["Charge controller<br/>panel W ÷ battery V"]
+  D --> W["Everything on at once<br/>→ branch classes, inverter"]
+  B --> S["System size A-D<br/>and voltage"]
+```
+
 1. **Energy each device uses**: watts × hours a day × how many. A 5 W bulb for 5 hours is
    25 Wh. Four of them are 100 Wh.
 2. **Add the losses** between the battery and the devices. DC devices: divide by 0.9 (step-down

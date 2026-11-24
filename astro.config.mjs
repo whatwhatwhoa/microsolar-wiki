@@ -3,11 +3,14 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import mermaid from 'astro-mermaid';
 
 // SITE: set to the live URL once Cloudflare gives one (llms.txt and the sitemap use it).
 export default defineConfig({
 	site: 'https://microsolar-wiki.example.workers.dev',
 	integrations: [
+		// Diagrams: ```mermaid blocks, drawn in the browser. Must come before starlight.
+		mermaid({ theme: 'neutral', autoTheme: true }),
 		starlight({
 			title: 'Micro Solar DC Wiki',
 			description: 'Plain-language guides for setting up a small off-grid solar power system safely.',
