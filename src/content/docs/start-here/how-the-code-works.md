@@ -33,6 +33,19 @@ Every system splits into the same parts, and each rule ID starts with its part.
 | Distribution | Wiring, fuses and breakers, connectors, outlets, earthing, enclosures | `DIST-` |
 | Loads | Outputs, appliances, inverters | `LOAD-` |
 
+```mermaid
+flowchart LR
+  SYS["SYS · safety model, labels, documents<br/>(applies to everything)"]
+  GEN["GEN · panels,<br/>charge controller"] --> STO["STO · battery, main fuse,<br/>isolator, placement"]
+  STO --> DIST["DIST · wiring, fuses,<br/>connectors, earthing, boxes"]
+  GEN --> DIST
+  DIST --> LOAD["LOAD · outputs,<br/>appliances, inverters"]
+  SYS -.-> GEN
+  SYS -.-> STO
+  SYS -.-> DIST
+  SYS -.-> LOAD
+```
+
 ## How a rule reads
 
 Each rule has an ID that never changes or gets reused, for example `STO-2.1`.

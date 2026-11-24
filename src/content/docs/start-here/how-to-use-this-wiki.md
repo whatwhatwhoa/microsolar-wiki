@@ -8,8 +8,19 @@ sidebar:
 
 This wiki helps you set up a **small off-grid solar power system**: one or a few solar panels,
 a charge controller, a battery, and the things you want to run from it, such as lights, a
-Wi-Fi router, a security camera or phone chargers. It covers systems up to about 24 volts and a
-few hundred watts.
+Wi-Fi router, a security camera or phone chargers. It covers 12 V and 24 V systems that store up
+to about 5 kWh: from a kit for one room to a home with a fridge.
+
+```mermaid
+flowchart LR
+  A["Start here<br/>A day with solar"] --> B["Plan<br/>size, voltage, estimator"]
+  B --> C["Buy parts<br/>checks, alternatives"]
+  C --> D["Install<br/>tools, wiring, connection order"]
+  D --> E["Commission<br/>test before use"]
+  E --> F["Maintain<br/>checks, troubleshooting"]
+  G["The code<br/>numbered rules"] -.-> B
+  G -.-> D
+```
 
 ## How the pages work
 

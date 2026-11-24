@@ -20,6 +20,43 @@ is organized the same way:
 
 Some devices cover more than one part. A power station, for example, has all four in one box.
 
+## How the parts connect
+
+Power flows from the panels and the battery into one shared point, the distribution board, and
+from there out to the loads. Every cable that leaves a power source has a fuse at that source.
+
+```mermaid
+flowchart LR
+  subgraph GEN["Power generation"]
+    PV["Solar panels"] --> PVD["PV disconnect"] --> CC["Charge controller<br/>(MPPT)"]
+  end
+  subgraph STO["Battery storage"]
+    BAT["Battery<br/>(with BMS)"] --> MF["Main fuse"] --> ISO["Isolator<br/>switch"]
+  end
+  subgraph DIST["Distribution"]
+    BUS["Distribution board<br/>(+ and − busbars)"]
+    BUS --> F1["Branch fuse"]
+    BUS --> F2["Branch fuse"]
+    BUS --> F3["Branch fuse"]
+    BUS --> F4["Fuse"]
+  end
+  subgraph LOAD["Loads"]
+    L1["Lights"]
+    L2["USB outlets"]
+    L3["Fridge, fan"]
+    INV["Inverter<br/>(only if needed)"]
+  end
+  CC -- "fuse at board" --> BUS
+  ISO --> BUS
+  F1 --> L1
+  F2 --> L2
+  F3 --> L3
+  F4 --> INV
+```
+
+The negative wires return the same way, to a negative busbar on the board. How to lay out the
+board and the branches: [Distribution wiring](/install/distribution-wiring/).
+
 ## Solar panels
 
 Panels are the "income" side of the system. Everything starts with how much energy they bring in.
