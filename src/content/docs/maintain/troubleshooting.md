@@ -82,6 +82,11 @@ The controller shows 0 A, or the battery voltage does not rise during the day.
 
 Lights or outlets go off, alone or all together.
 
+:::danger
+Never replace a fuse with a bigger one, or bridge it with wire. The fuse protects the wire from
+catching fire ([DIST-1.2](/code/overcurrent-protection/#dist-12-fuse-no-bigger-than-the-wire)).
+:::
+
 | What you find | Likely cause | What to do |
 |---|---|---|
 | Everything off, battery voltage low | The battery is empty. The BMS or the controller's load output switched off to protect it. | Normal protection. Turn loads off and let the panels recharge. If it happens often, the system uses more than it makes: see [Energy and load budgets](/plan/energy-and-load-budgets/). |
@@ -89,11 +94,6 @@ Lights or outlets go off, alone or all together.
 | One branch off | A blown fuse or tripped breaker on that branch | Unplug that branch's devices, replace the fuse with the **same** rating, plug devices back one at a time. If it blows again, the last device or its cord is faulty. |
 | Goes off when something big starts (fridge, pump) | The starting current is too high for the output, or the voltage sags on a thin cable | Measure voltage drop while it starts. Big motor loads should be fed from the battery side, not from a controller's load output. |
 | Works, then flickers or goes off when warm | A loose joint heating up | Switch off and tighten (installer), then check with your hand for heat under load. |
-
-:::danger
-Never replace a fuse with a bigger one, or bridge it with wire. The fuse protects the wire from
-catching fire ([DIST-1.2](/code/overcurrent-protection/#dist-12-fuse-no-bigger-than-the-wire)).
-:::
 
 ## The inverter shuts down
 
